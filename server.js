@@ -1,44 +1,36 @@
 const express = require('express')
 const app = express()
 const mongoose = require('mongoose')
-const Product = require('./models/productModel')
+const Order = require('./models/orderModel')
 app.use(express.json())
 app.use(express.urlencoded({extended: false}))
 //routes
 
-app.get('/',(req,res) =>{
-    res.send('Hello NODE API')
-})
-
-app.get('/blog',(req,res) =>{
-    res.send('Hello Blog. My name is Amany')
-})
-
-app.get('/products', async(req,res)=>{
+app.get('/orders', async(req,res)=>{
     try {
-       const products = await Product.find({});
-       res.status(200).json(products);
+       const orders = await Order.find({});
+       res.status(200).json(orders);
     } catch (error) {
         res.status(500).json({message: error.message})
     }
 })
 
-app.get('/products/:id', async(req,res)=>{
+app.get('/orders/:id', async(req,res)=>{
     try {
         const {id} = req.params;
-        const product = await Product.findById(id);
+        const order = await Order.findById(id);
         res.status(200).json(product); 
     } catch (error) {
         res.status(500).json({message: error.message})
     }
 })
 
-app.post('/products',async(req,res)=>{
+app.post('/orders',async(req,res)=>{
     
     try{
 
-        const product = await Product.create(req.body)
-        res.status(200).json(product);
+        const order = await Order.create(req.body)
+        res.status(200).json(order);
 
     } catch(error){
         console.log(error.message);
@@ -50,13 +42,13 @@ app.post('/products',async(req,res)=>{
 app.put('/products/:id', async(req,res)=>{
     try {
         const {id} = req.params;
-        const product = await Product.findByIdAndUpdate(id,req.body);
-        // we can not find any product in database
-        if(!product){
-            return res.status(404).json({message: `can not find any product with ID ${id}`});
+        const order = await Order.findByIdAndUpdate(id,req.body);
+        // we can not find any order in database
+        if(!order){
+            return res.status(404).json({message: `can not find any order with ID ${id}`});
         }
-        const updatedProduct = await Product.findById(id);
-        res.status(200).json(updatedProduct);
+        const updatedOrder = await Order.findById(id);
+        res.status(200).json(updatedOrder);
     } catch (error) {
         res.status(500).json({message: error.message})
     }
