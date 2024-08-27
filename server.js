@@ -38,7 +38,7 @@ app.post('/orders',async(req,res)=>{
     }
 })
 
-// update a product
+// update an order
 app.put('/products/:id', async(req,res)=>{
     try {
         const {id} = req.params;
@@ -49,6 +49,22 @@ app.put('/products/:id', async(req,res)=>{
         }
         const updatedOrder = await Order.findById(id);
         res.status(200).json(updatedOrder);
+    } catch (error) {
+        res.status(500).json({message: error.message})
+    }
+})
+
+// delete an order
+app.delete('/products/:id', async(req,res)=>{
+    try {
+        const {id} = req.params;
+        const order = await Order.findByIdAndDelete(id);
+        // we can not find any order in database
+        if(!order){
+            return res.status(404).json({message: `can not find any order with ID ${id}`});
+        }
+        res.status(200).json(order);
+       
     } catch (error) {
         res.status(500).json({message: error.message})
     }
