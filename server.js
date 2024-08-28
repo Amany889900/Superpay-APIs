@@ -39,7 +39,7 @@ app.post('/orders',async(req,res)=>{
 })
 
 // update an order
-app.put('/products/:id', async(req,res)=>{
+app.put('/orders/:id', async(req,res)=>{
     try {
         const {id} = req.params;
         const order = await Order.findByIdAndUpdate(id,req.body);
@@ -55,7 +55,7 @@ app.put('/products/:id', async(req,res)=>{
 })
 
 // delete an order
-app.delete('/products/:id', async(req,res)=>{
+app.delete('/orders/:id', async(req,res)=>{
     try {
         const {id} = req.params;
         const order = await Order.findByIdAndDelete(id);
