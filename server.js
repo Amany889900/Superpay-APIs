@@ -1,10 +1,13 @@
 const express = require('express')
 const app = express()
 const mongoose = require('mongoose')
-const Order = require('./models/orderModel')
+const Order = require('./models/orderModel');
+const Payment = require('./models/paymentModel');
 app.use(express.json())
 app.use(express.urlencoded({extended: false}))
-//routes
+
+
+// ORDER ROUTES
 
 app.get('/orders', async(req,res)=>{
     try {
@@ -69,6 +72,62 @@ app.delete('/orders/:id', async(req,res)=>{
         res.status(500).json({message: error.message})
     }
 })
+
+// PAYMENT ROUTES
+
+
+// Create a new payment
+app.post('/payments', async (req, res) => {
+    try {
+        const payment = await Payment.create(req.body);
+        res.status(201).json(payment);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Get payment details
+app.get('/payments/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const payment = await Payment.findById(id);
+        if (!payment) {
+            return res.status(404).json({ message: 'Payment not found' });
+        }
+        res.status(200).json(payment);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Update payment status
+app.put('/payments/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const payment = await Payment.findByIdAndUpdate(id, req.body, { new: true });
+        if (!payment) {
+            return res.status(404).json({ message: 'Payment not found' });
+        }
+        res.status(200).json(payment);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Delete a payment
+app.delete('/payments/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const payment = await Payment.findByIdAndDelete(id);
+        if (!payment) {
+            return res.status(404).json({ message: 'Payment not found' });
+        }
+        res.status(200).json(payment);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
 
 mongoose.connect('mongodb+srv://amanyehab:082003Am@orderapi.d3ybi.mongodb.net/Node-API?retryWrites=true&w=majority&appName=orderAPI')
 .then(()=>{
