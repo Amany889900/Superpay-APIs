@@ -5,6 +5,9 @@ const Order = require('./models/orderModel');
 const Payment = require('./models/paymentModel');
 app.use(express.json())
 app.use(express.urlencoded({extended: false}))
+const cors = require('cors');
+app.use(cors({ origin: 'http://localhost:4200' })); // Adjust the origin as needed
+
 
 
 // ORDER ROUTES
