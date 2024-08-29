@@ -1,6 +1,6 @@
-const express = require('express')
-const app = express()
-const mongoose = require('mongoose')
+const express = require('express');
+const app = express();
+const mongoose = require('mongoose');
 const Order = require('./models/orderModel');
 const Payment = require('./models/paymentModel');
 app.use(express.json())
