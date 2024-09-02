@@ -6,8 +6,10 @@ const Payment = require('./models/paymentModel');
 app.use(express.json())
 app.use(express.urlencoded({extended: false}))
 const cors = require('cors');
-app.use(cors({ origin: 'http://localhost:4200' })); // Adjust the origin as needed
-
+app.use(cors({ origin: 'http://localhost:4200' })); 
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+import { generateToken } from './token';
 
 
 // ORDER ROUTES
@@ -25,7 +27,7 @@ app.get('/orders/:id', async(req,res)=>{
     try {
         const {id} = req.params;
         const order = await Order.findById(id);
-        res.status(200).json(product); 
+        res.status(200).json(order); 
     } catch (error) {
         res.status(500).json({message: error.message})
     }
@@ -51,7 +53,7 @@ app.put('/orders/:id', async(req,res)=>{
         const order = await Order.findByIdAndUpdate(id,req.body);
         // we can not find any order in database
         if(!order){
-            return res.status(404).json({message: `can not find any order with ID ${id}`});
+            return res.status(400).json({message: `can not find any order with ID ${id}`}); //400
         }
         const updatedOrder = await Order.findById(id);
         res.status(200).json(updatedOrder);
@@ -67,7 +69,7 @@ app.delete('/orders/:id', async(req,res)=>{
         const order = await Order.findByIdAndDelete(id);
         // we can not find any order in database
         if(!order){
-            return res.status(404).json({message: `can not find any order with ID ${id}`});
+            return res.status(400).json({message: `can not find any order with ID ${id}`});
         }
         res.status(200).json(order);
        
@@ -104,7 +106,7 @@ app.get('/payments/:id', async (req, res) => {
         const { id } = req.params;
         const payment = await Payment.findById(id);
         if (!payment) {
-            return res.status(404).json({ message: 'Payment not found' });
+            return res.status(400).json({ message: 'Payment not found' });
         }
         res.status(200).json(payment);
     } catch (error) {
@@ -118,7 +120,7 @@ app.put('/payments/:id', async (req, res) => {
         const { id } = req.params;
         const payment = await Payment.findByIdAndUpdate(id, req.body, { new: true });
         if (!payment) {
-            return res.status(404).json({ message: 'Payment not found' });
+            return res.status(400).json({ message: 'Payment not found' });
         }
         res.status(200).json(payment);
     } catch (error) {
@@ -132,13 +134,119 @@ app.delete('/payments/:id', async (req, res) => {
         const { id } = req.params;
         const payment = await Payment.findByIdAndDelete(id);
         if (!payment) {
-            return res.status(404).json({ message: 'Payment not found' });
+            return res.status(400).json({ message: 'Payment not found' });
         }
         res.status(200).json(payment);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 });
+
+// MIDDLEWARES
+
+const authenticate = (req, res, next) => {
+    const token = req.header('Authorization').replace('Bearer ', '');
+    if (!token) {
+        return res.status(401).json({ message: 'Access denied. No token provided.' });
+    }
+    try {
+        const decoded = jwt.verify(token, 'ayHaga');
+        req.user = decoded;
+        next();
+    } catch (error) {
+        res.status(400).json({ message: 'Invalid token.' });
+    }
+};
+
+// LOGIN ROUTES
+
+const User = require('./models/userModel');
+
+// Create a new user
+app.post('/register', async (req, res) => {
+    try {
+        const user = await User.create(req.body);
+        res.status(201).json(user);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Create a login session 
+app.post('/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const user = await User.findOne({ email });
+
+        if (!user || !bcrypt.compareSync(password, user.password)) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
+
+        const token = generateToken(user);
+        res.status(200).json({ token });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+app.get('/users', async(req,res)=>{
+    try {
+       const user = await User.find({});
+       res.status(200).json(user);
+    } catch (error) {
+        res.status(500).json({message: error.message});
+    }
+});
+
+app.use('/users',authenticate);
+
+// Get user details
+app.get('/users/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const user = await User.findById(id);
+        if (!user) {
+            return res.status(400).json({ message: 'User not found' });
+        }
+        res.status(200).json(user);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Update user status
+app.put('/users/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const user = await User.findByIdAndUpdate(id, req.body, { new: true });
+        if (!user) {
+            return res.status(400).json({ message: 'User not found' });
+        }
+        res.status(200).json(user);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Delete 
+app.delete('/users/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const user = await User.findByIdAndDelete(id);
+        if (!user) {
+            return res.status(400).json({ message: 'User not found' });
+        }
+        res.status(200).json(user);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+
+
+
+
+
 
 
 mongoose.connect('mongodb+srv://amanyehab:082003Am@orderapi.d3ybi.mongodb.net/Node-API?retryWrites=true&w=majority&appName=orderAPI')
