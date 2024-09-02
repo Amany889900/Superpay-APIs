@@ -3,13 +3,14 @@ const app = express();
 const mongoose = require('mongoose');
 const Order = require('./models/orderModel');
 const Payment = require('./models/paymentModel');
+const User = require('./models/userModel');
 app.use(express.json())
 app.use(express.urlencoded({extended: false}))
 const cors = require('cors');
 app.use(cors({ origin: 'http://localhost:4200' })); 
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-import { generateToken } from './token';
+
 
 
 // ORDER ROUTES
@@ -158,9 +159,11 @@ const authenticate = (req, res, next) => {
     }
 };
 
+app.use('/users',authenticate);
+
 // LOGIN ROUTES
 
-const User = require('./models/userModel');
+
 
 // Create a new user
 app.post('/register', async (req, res) => {
@@ -171,6 +174,8 @@ app.post('/register', async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 });
+
+
 
 // Create a login session 
 app.post('/login', async (req, res) => {
@@ -189,6 +194,8 @@ app.post('/login', async (req, res) => {
     }
 });
 
+
+
 app.get('/users', async(req,res)=>{
     try {
        const user = await User.find({});
@@ -198,7 +205,7 @@ app.get('/users', async(req,res)=>{
     }
 });
 
-app.use('/users',authenticate);
+
 
 // Get user details
 app.get('/users/:id', async (req, res) => {
