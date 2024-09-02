@@ -10,6 +10,7 @@ const cors = require('cors');
 app.use(cors({ origin: 'http://localhost:4200' })); 
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { isExternalModuleNameRelative } = require('typescript');
 
 
 
@@ -145,30 +146,35 @@ app.delete('/payments/:id', async (req, res) => {
 
 // MIDDLEWARES
 
-const authenticate = (req, res, next) => {
-    const token = req.header('Authorization').replace('Bearer ', '');
-    if (!token) {
-        return res.status(401).json({ message: 'Access denied. No token provided.' });
-    }
-    try {
-        const decoded = jwt.verify(token, 'ayHaga');
-        req.user = decoded;
-        next();
-    } catch (error) {
-        res.status(400).json({ message: 'Invalid token.' });
-    }
-};
+// const authenticate = (req, res, next) => {
+//     const token = req.header('Authorization').replace('Bearer ', '');
+//     if (!token) {
+//         return res.status(401).json({ message: 'Access denied. No token provided.' });
+//     }
+//     try {
+//         const decoded = jwt.verify(token, 'ayHaga');
+//         req.user = decoded;
+//         next();
+//     } catch (error) {
+//         res.status(400).json({ message: 'Invalid token.' });
+//     }
+// };
 
-app.use('/users',authenticate);
+// app.use('/users',authenticate);
 
 // LOGIN ROUTES
 
 
 
 // Create a new user
+
+const saltRounds = 10;
+
 app.post('/register', async (req, res) => {
     try {
-        const user = await User.create(req.body);
+        const { password, email } = req.body;
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
+        const user = await User.create({ password: hashedPassword, email});
         res.status(201).json(user);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -177,22 +183,37 @@ app.post('/register', async (req, res) => {
 
 
 
+
 // Create a login session 
 app.post('/login', async (req, res) => {
+    const { userEmail, password } = req.body;
+
+    // Retrieve hashed password from database
+    const user = await User.findOne({ email: userEmail });
+    const storedHashedPassword = user.password;
+    // console.log("INFOOO", user);
+
+    if (!storedHashedPassword) {
+        
+        
+        return res.status(401).send('User not found');
+    }
+
     try {
-        const { email, password } = req.body;
-        const user = await User.findOne({ email });
+        // Compare the hashed password from request with the stored hashed password
+        const match = await bcrypt.compare(password, storedHashedPassword);
 
-        if (!user || !bcrypt.compareSync(password, user.password)) {
-            return res.status(400).json({ message: 'Invalid credentials' });
+        if (match) {
+            res.status(200).send('Login successful');
+        } else {
+            res.status(401).send('Invalid credentials');
         }
-
-        const token = generateToken(user);
-        res.status(200).json({ token });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).send('Server error');
     }
 });
+
+
 
 
 
