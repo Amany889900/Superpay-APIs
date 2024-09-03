@@ -203,7 +203,7 @@ app.post('/login', async (req, res) => {
     if (!storedHashedPassword) {
         return res.status(401).send('User not found');
     }
-
+    
     try {
         // Compare the hashed password from request with the stored hashed password
         const match = await bcrypt.compare(password, storedHashedPassword);
@@ -239,7 +239,24 @@ app.get('/users', async(req,res)=>{
         res.status(500).json({message: error.message});
     }
 });
+// TOKEN TRIAL
+app.get('/user', authenticate, async (req, res) => {
+    try {
+        // The user object is set by the authenticate middleware
+        const userId = req.user.userId; // `userId` in the JWT
 
+        // Fetch user details from the database
+        const user = await User.findById(userId).select('-password'); // Exclude the password field
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.status(200).json(user); // return user data
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
 
 
 // Get user details
