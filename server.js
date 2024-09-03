@@ -146,19 +146,19 @@ app.delete('/payments/:id', async (req, res) => {
 
 // MIDDLEWARES
 
-// const authenticate = (req, res, next) => {
-//     const token = req.header('Authorization').replace('Bearer ', '');
-//     if (!token) {
-//         return res.status(401).json({ message: 'Access denied. No token provided.' });
-//     }
-//     try {
-//         const decoded = jwt.verify(token, 'ayHaga');
-//         req.user = decoded;
-//         next();
-//     } catch (error) {
-//         res.status(400).json({ message: 'Invalid token.' });
-//     }
-// };
+const authenticate = (req, res, next) => {
+    const token = req.header('Authorization').replace('Bearer ', '');
+    if (!token) {
+        return res.status(401).json({ message: 'Access denied. No token provided.' });
+    }
+    try {
+        const decoded = jwt.verify(token, 'ayHaga');
+        req.user = decoded;
+        next();
+    } catch (error) {
+        res.status(400).json({ message: 'Invalid token.' });
+    }
+};
 
 // app.use('/users',authenticate);
 
@@ -173,8 +173,15 @@ const saltRounds = 10;
 app.post('/register', async (req, res) => {
     try {
         const { password, email } = req.body;
+       
+        const existingUser = await User.findOne({ email });
+         if (existingUser) {
+         return res.status(409).json({ message: 'Email is already in use.' });
+        }
+
         const hashedPassword = await bcrypt.hash(password, saltRounds);
         const user = await User.create({ password: hashedPassword, email});
+        
         res.status(201).json(user);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -186,31 +193,38 @@ app.post('/register', async (req, res) => {
 
 // Create a login session 
 app.post('/login', async (req, res) => {
-    const { userEmail, password } = req.body;
+    const { email, password } = req.body;
 
     // Retrieve hashed password from database
-    const user = await User.findOne({ email: userEmail });
+    const user = await User.findOne({ email});
     const storedHashedPassword = user.password;
     // console.log("INFOOO", user);
 
     if (!storedHashedPassword) {
-        
-        
         return res.status(401).send('User not found');
     }
 
     try {
         // Compare the hashed password from request with the stored hashed password
         const match = await bcrypt.compare(password, storedHashedPassword);
+        console.log('Stored Hashed Password:', storedHashedPassword);
+        console.log('Plaintext Password:', password);
 
         if (match) {
-            res.status(200).send('Login successful');
+            //res.status(200).send('Login successful');
+            const token = jwt.sign({ userId: user.id }, 'ayHaga', { expiresIn: '1h' });
+            res.status(200).json({ message: 'Login successful', token });
+
         } else {
             res.status(401).send('Invalid credentials');
         }
     } catch (error) {
         res.status(500).send('Server error');
     }
+});
+
+app.get('/protected', authenticate, (req, res) => {
+    res.status(200).json({ message: 'You have accessed a protected route', user: req.user });
 });
 
 
