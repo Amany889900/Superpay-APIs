@@ -164,11 +164,9 @@ const authenticate = (req, res, next) => {
 
 // LOGIN ROUTES
 
-
-
 // Create a new user
 
-const saltRounds = 10;
+
 
 app.post('/register', async (req, res) => {
     try {
@@ -179,7 +177,7 @@ app.post('/register', async (req, res) => {
          return res.status(409).json({ message: 'Email is already in use.' });
         }
 
-        const hashedPassword = await bcrypt.hash(password, saltRounds);
+        const hashedPassword = await bcrypt.hash(password,10);
         const user = await User.create({ password: hashedPassword, email});
         
         res.status(201).json(user);
@@ -188,33 +186,38 @@ app.post('/register', async (req, res) => {
     }
 });
 
-
-
+// Msh 3arfa ana b3ml eh 
+app.post('/hash-password', async (req, res) => {
+    try {
+        const { password } = req.body;
+        const hashedPassword = await bcrypt.hash(password, 10);
+        res.json({ hashedPassword });
+    } catch (error) {
+        res.status(500).json({ error: 'Error hashing password' });
+    }
+});
 
 // Create a login session 
 app.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
     // Retrieve hashed password from database
-    const user = await User.findOne({ email});
-    const storedHashedPassword = user.password;
-    // console.log("INFOOO", user);
-
-    if (!storedHashedPassword) {
+    const user = await User.findOne({ email });
+    if (!user) {
         return res.status(401).send('User not found');
     }
-    
-    try {
-        // Compare the hashed password from request with the stored hashed password
-        const match = await bcrypt.compare(password, storedHashedPassword);
-        console.log('Stored Hashed Password:', storedHashedPassword);
-        console.log('Plaintext Password:', password);
 
-        if (match) {
-            //res.status(200).send('Login successful');
+    const storedHashedPassword = user.password;
+
+    // Log passwords for debugging
+    console.log('Received hashed password:', password);
+    console.log('Stored hashed password:', storedHashedPassword);
+
+    // Directly compare the client-side hashed password with the stored hashed password
+    try {
+        if (password === storedHashedPassword) {
             const token = jwt.sign({ userId: user.id }, 'ayHaga', { expiresIn: '1h' });
             res.status(200).json({ message: 'Login successful', token });
-
         } else {
             res.status(401).send('Invalid credentials');
         }
@@ -222,6 +225,7 @@ app.post('/login', async (req, res) => {
         res.status(500).send('Server error');
     }
 });
+
 
 app.get('/protected', authenticate, (req, res) => {
     res.status(200).json({ message: 'You have accessed a protected route', user: req.user });
@@ -316,5 +320,5 @@ mongoose.connect('mongodb+srv://amanyehab:082003Am@orderapi.d3ybi.mongodb.net/No
      })
     
 }).catch(()=>{
-    console.log(error)
+    console.log(error);
 })
