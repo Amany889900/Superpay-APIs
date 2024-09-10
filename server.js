@@ -197,27 +197,21 @@ app.post('/hash-password', async (req, res) => {
     }
 });
 
-// Create a login session 
 app.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
-    // Retrieve hashed password from database
-    const user = await User.findOne({ email });
-    if (!user) {
-        return res.status(401).send('User not found');
-    }
-
-    const storedHashedPassword = user.password;
-
-    // Log passwords for debugging
-    console.log('Received hashed password:', password);
-    console.log('Stored hashed password:', storedHashedPassword);
-
-    // Directly compare the client-side hashed password with the stored hashed password
     try {
-        if (password === storedHashedPassword) {
+        // Retrieve user from database
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(401).send('User not found');
+        }
+
+        // Compare the provided password with the stored hashed password
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (isMatch) {
             const token = jwt.sign({ userId: user.id }, 'ayHaga', { expiresIn: '1h' });
-            res.status(200).json({ message: 'Login successful', token });
+            res.status(200).json({success: true, message: 'Login successful', token });
         } else {
             res.status(401).send('Invalid credentials');
         }
